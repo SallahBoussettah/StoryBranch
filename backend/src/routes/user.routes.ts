@@ -10,9 +10,14 @@ router.use(protect);
 
 // User profile routes
 router.get('/me', UserController.getProfile);
+router.get('/me/detailed', UserController.getDetailedProfile);
 router.patch('/me', UserController.updateProfile);
 router.patch('/me/password', UserController.changePassword);
 router.delete('/me', UserController.deleteUser);
+
+// Role management routes
+router.post('/me/role-upgrade', UserController.requestRoleUpgrade);
+router.get('/role-upgrade-requests', restrictTo(UserRole.ADMIN), UserController.getRoleUpgradeRequests);
 
 // Admin-only routes
 router.get('/', restrictTo(UserRole.ADMIN), UserController.listUsers);

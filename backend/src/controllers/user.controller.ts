@@ -85,6 +85,91 @@ export class UserController {
   }
 
   /**
+   * Get user profile with detailed information including achievements and statistics
+   */
+  static async getDetailedProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // User is attached to request by auth middleware
+      if (!req.user) {
+        throw new AppError('Not authenticated', 401);
+      }
+
+      const user = await UserService.getUserById(req.user.id);
+      const userData = UserService.getUserResponseData(user);
+
+      // Get user achievements
+      const achievements = await prisma.userAchievement.findMany({
+        where: { userId: req.user.id },
+        include: {
+          achievement: true,
+          story: {
+            select: {
+              id: true,
+              title: true,
+              coverImageUrl: true
+            }
+          }
+        },
+        orderBy: { earnedAt: 'desc' }
+      });
+
+      // Get user reading statistics
+      const readingStats = await prisma.progress.findMany({
+        where: { userId: req.user.id },
+        include: {
+          story: {
+            select: {
+              id: true,
+              title: true,
+              coverImageUrl: true
+            }
+          }
+        }
+      });
+
+      // Calculate statistics
+      const storiesStarted = readingStats.length;
+      const storiesCompleted = readingStats.filter(progress => progress.completedAt !== null).length;
+      const totalAchievements = achievements.length;
+
+      // Return detailed profile data
+      res.status(200).json({
+        status: 'success',
+        data: {
+          user: userData,
+          statistics: {
+            storiesStarted,
+            storiesCompleted,
+            totalAchievements,
+            completionRate: storiesStarted > 0 ? Math.round((storiesCompleted / storiesStarted) * 100) : 0
+          },
+          achievements: achievements.map(item => ({
+            id: item.id,
+            name: item.achievement.name,
+            description: item.achievement.description,
+            iconUrl: item.achievement.iconUrl,
+            earnedAt: item.earnedAt,
+            story: item.story
+          })),
+          readingProgress: readingStats.map(progress => ({
+            storyId: progress.storyId,
+            storyTitle: progress.story.title,
+            coverImageUrl: progress.story.coverImageUrl,
+            startedAt: progress.startedAt,
+            lastActiveAt: progress.lastActiveAt,
+            completedAt: progress.completedAt,
+            isCompleted: progress.completedAt !== null,
+            discoveredEndings: progress.discoveredEndings.length
+          }))
+        }
+      });
+    } catch (error) {
+      Logger.error('Error getting detailed user profile', error);
+      next(error);
+    }
+  }
+
+  /**
    * Change user password
    */
   static async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -173,6 +258,76 @@ export class UserController {
       });
     } catch (error) {
       Logger.error(`Error updating user role: ${req.params.id}`, error);
+      next(error);
+    }
+  }
+
+  /**
+   * Request role upgrade (reader to writer)
+   */
+  static async requestRoleUpgrade(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // User is attached to request by auth middleware
+      if (!req.user) {
+        throw new AppError('Not authenticated', 401);
+      }
+
+      // Check if user is already a writer or admin
+      const user = await UserService.getUserById(req.user.id);
+      if (user.role !== UserRole.READER) {
+        throw new AppError('You already have elevated permissions', 400);
+      }
+
+      // In a real application, this would create a role upgrade request
+      // For now, we'll simulate this by updating a field in the user's preferences
+      const preferences = {
+        ...(user.preferences as Record<string, any>),
+        roleUpgradeRequested: true,
+        roleUpgradeRequestedAt: new Date().toISOString()
+      };
+
+      // Update user preferences
+      const updatedUser = await UserService.updateUser(req.user.id, { preferences });
+      const userData = UserService.getUserResponseData(updatedUser);
+
+      // Return success message
+      res.status(200).json({
+        status: 'success',
+        message: 'Role upgrade request submitted successfully',
+        data: { user: userData }
+      });
+    } catch (error) {
+      Logger.error(`Error requesting role upgrade: ${req.user?.id}`, error);
+      next(error);
+    }
+  }
+
+  /**
+   * Get role upgrade requests (admin only)
+   */
+  static async getRoleUpgradeRequests(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      // Find users with role upgrade requests
+      const users = await prisma.user.findMany({
+        where: {
+          role: UserRole.READER,
+          preferences: {
+            path: ['roleUpgradeRequested'],
+            equals: true
+          }
+        },
+        orderBy: { updatedAt: 'desc' }
+      });
+
+      const usersData = users.map(user => UserService.getUserResponseData(user));
+
+      res.status(200).json({
+        status: 'success',
+        results: usersData.length,
+        data: { users: usersData }
+      });
+    } catch (error) {
+      Logger.error('Error getting role upgrade requests', error);
       next(error);
     }
   }

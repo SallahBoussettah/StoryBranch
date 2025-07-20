@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const { isAuthenticated, user, logout } = useAuth();
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
       <header className="bg-white shadow-md">
@@ -13,15 +16,10 @@ const Layout = ({ children }: LayoutProps) => {
             Interactive Stories
           </Link>
           <nav>
-            <ul className="flex space-x-6">
+            <ul className="flex space-x-6 items-center">
               <li>
                 <Link to="/" className="text-gray-600 hover:text-blue-600 font-medium transition">
                   Home
-                </Link>
-              </li>
-              <li>
-                <Link to="/create" className="text-gray-600 hover:text-blue-600 font-medium transition">
-                  Create
                 </Link>
               </li>
               <li>
@@ -29,11 +27,37 @@ const Layout = ({ children }: LayoutProps) => {
                   Browse
                 </Link>
               </li>
-              <li>
-                <Link to="/login" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-                  Login
-                </Link>
-              </li>
+              
+              {isAuthenticated && (
+                <li>
+                  <Link to="/create" className="text-gray-600 hover:text-blue-600 font-medium transition">
+                    Create
+                  </Link>
+                </li>
+              )}
+              
+              {isAuthenticated ? (
+                <li className="flex items-center space-x-4">
+                  <Link to="/profile" className="text-gray-600 hover:text-blue-600 transition">
+                    {user?.username}
+                  </Link>
+                  <button
+                    onClick={() => logout()}
+                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition"
+                  >
+                    Logout
+                  </button>
+                </li>
+              ) : (
+                <li className="flex items-center space-x-2">
+                  <Link to="/login" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                    Login
+                  </Link>
+                  <Link to="/signup" className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+                    Sign Up
+                  </Link>
+                </li>
+              )}
             </ul>
           </nav>
         </div>
