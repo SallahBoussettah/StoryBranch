@@ -1,0 +1,175 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  // Connection pooling is handled automatically by Prisma Client
+}
+
+// User model
+model User {
+  id               String            @id @default(uuid()) @db.Uuid
+  email            String            @unique
+  passwordHash     String
+  username         String            @unique
+  role             UserRole          @default(READER)
+  preferences      Json              @default("{}")
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  stories          Story[]
+  progress         Progress[]
+  userAchievements UserAchievement[]
+  passwordReset    PasswordReset?
+
+  @@map("users")
+}
+
+// Story model
+model Story {
+  id               String            @id @default(uuid()) @db.Uuid
+  authorId         String            @db.Uuid
+  title            String
+  description      String
+  coverImageUrl    String?
+  genres           String[]
+  difficulty       Difficulty        @default(MEDIUM)
+  status           StoryStatus       @default(DRAFT)
+  metadata         Json              @default("{}")
+  publishedAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  author           User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  nodes            Node[]
+  progress         Progress[]
+  userAchievements UserAchievement[]
+
+  @@map("stories")
+}
+
+// Node model
+model Node {
+  id           String   @id @default(uuid()) @db.Uuid
+  storyId      String   @db.Uuid
+  title        String
+  content      String
+  isEnding     Boolean  @default(false)
+  metadata     Json     @default("{}")
+  positionX    Int
+  positionY    Int
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  story        Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  sourceChoices Choice[] @relation("SourceNode")
+  targetChoices Choice[] @relation("TargetNode")
+  progress     Progress[]
+
+  @@map("nodes")
+}
+
+// Choice model
+model Choice {
+  id           String   @id @default(uuid()) @db.Uuid
+  sourceNodeId String   @db.Uuid
+  targetNodeId String   @db.Uuid
+  text         String
+  order        Int
+  conditions   Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  sourceNode   Node     @relation("SourceNode", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode   Node     @relation("TargetNode", fields: [targetNodeId], references: [id], onDelete: Cascade)
+
+  @@map("choices")
+}
+
+// Progress model
+model Progress {
+  id              String    @id @default(uuid()) @db.Uuid
+  userId          String    @db.Uuid
+  storyId         String    @db.Uuid
+  currentNodeId   String    @db.Uuid
+  visitedNodes    String[]  @db.Uuid
+  discoveredEndings String[] @db.Uuid
+  startedAt       DateTime  @default(now())
+  lastActiveAt    DateTime  @default(now())
+  completedAt     DateTime?
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  story           Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  currentNode     Node      @relation(fields: [currentNodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+  @@map("progress")
+}
+
+// Achievement model
+model Achievement {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String
+  description      String
+  iconUrl          String?
+  type             AchievementType
+  criteria         Json              @default("{}")
+  createdAt        DateTime          @default(now())
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+// UserAchievement model
+model UserAchievement {
+  id            String      @id @default(uuid()) @db.Uuid
+  userId        String      @db.Uuid
+  achievementId String      @db.Uuid
+  storyId       String?     @db.Uuid
+  earnedAt      DateTime    @default(now())
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  story         Story?      @relation(fields: [storyId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, achievementId, storyId])
+  @@map("user_achievements")
+}
+
+// PasswordReset model
+model PasswordReset {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @unique @db.Uuid
+  token     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_resets")
+}
+
+// Enums
+enum UserRole {
+  READER
+  WRITER
+  ADMIN
+}
+
+enum StoryStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum AchievementType {
+  STORY_COMPLETION
+  ENDING_DISCOVERY
+  SPECIAL_PATH
+  SYSTEM
+}
