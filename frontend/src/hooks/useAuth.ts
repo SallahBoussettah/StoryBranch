@@ -64,7 +64,12 @@ export const useRequireRole = (requiredRoles: string[], redirectTo = '/') => {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated && user) {
-      if (!requiredRoles.includes(user.role)) {
+      // Case-insensitive role check
+      const roleMatches = requiredRoles.some(role => 
+        role.toUpperCase() === user.role.toUpperCase()
+      );
+      
+      if (!roleMatches) {
         navigate(redirectTo);
       }
     } else if (!isLoading && !isAuthenticated) {

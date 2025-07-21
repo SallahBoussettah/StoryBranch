@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
-import Button from '../ui/Button';
+import { Button } from '../ui/Button';
 
 const ProfileEdit: React.FC = () => {
   const { profile, isLoading, error, updateProfile } = useProfile();

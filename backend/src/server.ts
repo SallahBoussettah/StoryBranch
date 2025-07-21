@@ -1,6 +1,7 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response } from 'express';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import path from 'path';
 
 // Import middleware
 import { setupCors } from './middleware/cors.middleware';
@@ -19,8 +20,10 @@ dotenv.config();
 import indexRoutes from './routes/index.routes';
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
-// Additional routes to be implemented
-// import storyRoutes from './routes/story.routes';
+import storyRoutes from './routes/story.routes';
+import storyVersionRoutes from './routes/story-version.routes';
+import nodeRoutes from './routes/node.routes';
+import choiceRoutes from './routes/choice.routes';
 
 // Create Express app
 const app = express();
@@ -48,11 +51,37 @@ app.get('/', (req: Request, res: Response) => {
 app.use('/api', indexRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
-// Additional routes to be implemented
-// app.use('/api/stories', storyRoutes);
+app.use('/api/stories', storyRoutes);
+app.use('/api', storyVersionRoutes); // Using /api prefix for version routes
+app.use('/api/nodes', nodeRoutes);
+app.use('/api/choices', choiceRoutes);
 
-// 404 handler for undefined routes
-app.use(notFoundHandler);
+// Serve static files from the frontend build directory in production
+if (env.isProduction) {
+  const frontendPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendPath));
+  
+  // For any routes that don't match API routes, serve the frontend index.html
+  app.get('*', (req: Request, res: Response) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+} else {
+  // In development, we'll set up a catch-all route that returns a more helpful message
+  app.get('*', (req: Request, res: Response) => {
+    // Skip API routes - they should be handled by the notFoundHandler
+    if (req.path.startsWith('/api/')) {
+      return notFoundHandler(req, res);
+    }
+    
+    // For frontend routes, explain that they need to be accessed through the frontend dev server
+    res.status(200).json({
+      status: 'info',
+      message: 'This is a frontend route that should be accessed through the frontend development server.',
+      note: 'In production, this would serve the frontend application.',
+      requestedPath: req.path
+    });
+  });
+}
 
 // Global error handler
 app.use(errorHandler);

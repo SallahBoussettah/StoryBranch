@@ -1,16 +1,17 @@
-import React, { InputHTMLAttributes } from 'react';
+import React from 'react';
 
-interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface FormInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
+  id: string;
   error?: string;
 }
 
-const FormInput: React.FC<FormInputProps> = ({ 
-  label, 
-  error, 
-  id, 
-  className = '', 
-  ...props 
+export const FormInput: React.FC<FormInputProps> = ({
+  label,
+  id,
+  error,
+  className = '',
+  ...props
 }) => {
   return (
     <div className="mb-4">
@@ -22,7 +23,7 @@ const FormInput: React.FC<FormInputProps> = ({
       </label>
       <input
         id={id}
-        className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
           error ? 'border-red-500' : 'border-gray-300'
         } ${className}`}
         {...props}
@@ -33,5 +34,3 @@ const FormInput: React.FC<FormInputProps> = ({
     </div>
   );
 };
-
-export default FormInput;

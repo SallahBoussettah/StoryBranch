@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useRequireRole } from '../../hooks/useAuth';
 
 interface RoleProtectedRouteProps {
@@ -12,6 +12,7 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   redirectTo = '/' 
 }) => {
   const { user, isAuthenticated, isLoading } = useRequireRole(allowedRoles, redirectTo);
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -22,10 +23,17 @@ const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   }
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
+    console.log('User not authenticated, redirecting to login');
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  // Case-insensitive role check
+  const isRoleAllowed = allowedRoles.some(role => 
+    role.toUpperCase() === user.role.toUpperCase()
+  );
+  
+  if (!isRoleAllowed) {
+    console.log('User role not allowed, redirecting to', redirectTo);
     return <Navigate to={redirectTo} replace />;
   }
 

@@ -117,7 +117,7 @@ export class AuthController {
 
       // Request password reset
       await AuthService.requestPasswordReset(email);
-      
+
       // Return success message (don't reveal if user exists)
       res.status(200).json({
         status: 'success',
@@ -138,7 +138,7 @@ export class AuthController {
 
       // Reset password
       await AuthService.resetPassword(token, password);
-      
+
       // Return success message
       res.status(200).json({
         status: 'success',

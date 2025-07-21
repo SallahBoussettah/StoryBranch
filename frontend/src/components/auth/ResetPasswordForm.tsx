@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import FormInput from '../ui/FormInput';
-import Button from '../ui/Button';
+import { FormInput } from '../ui/FormInput';
+import { Button } from '../ui/Button';
 import Alert from '../ui/Alert';
 import { useAuth } from '../../hooks/useAuth';
 import { validatePassword, validatePasswordConfirmation } from '../../utils/validation';

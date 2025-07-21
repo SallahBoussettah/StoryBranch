@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProfile } from '../../hooks/useProfile';
-import Button from '../ui/Button';
+import { Button } from '../ui/Button';
 import WriterDashboard from './WriterDashboard';
 import ReadingHistory from './ReadingHistory';
 import type { ReadingHistoryItem } from './ReadingHistory';

@@ -28,10 +28,10 @@ const Layout = ({ children }: LayoutProps) => {
                 </Link>
               </li>
               
-              {isAuthenticated && (
+              {isAuthenticated && user?.role?.toUpperCase() === 'WRITER' && (
                 <li>
-                  <Link to="/create" className="text-gray-600 hover:text-blue-600 font-medium transition">
-                    Create
+                  <Link to="/stories/manage" className="text-gray-600 hover:text-blue-600 font-medium transition">
+                    My Stories
                   </Link>
                 </li>
               )}
